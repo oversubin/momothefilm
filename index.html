@@ -117,14 +117,14 @@ section{padding:0 clamp(18px,4vw,56px)}
 .char h3{margin:22px 0 0;font-size:clamp(15px,1.5vw,19px);font-weight:500;letter-spacing:.5em;padding-left:.5em}
 
 /* 스틸: 가로로 흐르는 장면 */
-.stills{display:flex;gap:clamp(10px,1.4vw,18px);overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1 * clamp(18px,4vw,56px));padding:0 clamp(18px,4vw,56px) 14px;scrollbar-width:none}
-.stills::-webkit-scrollbar{display:none}
-.stills figure{flex:0 0 auto;margin:0;scroll-snap-align:center;overflow:hidden}
-.stills img{height:clamp(200px,32vw,440px);width:auto;cursor:zoom-in;transition:transform 1.4s var(--ease)}
-.stills figure:hover img{transform:scale(1.03)}
-.nav2{display:flex;gap:10px;justify-content:center;margin-top:18px}
-.nav2 button{width:38px;height:38px;border-radius:50%;border:1px solid var(--hair);font-family:var(--mono);font-size:12px;transition:border-color .4s var(--io),color .4s var(--io)}
-.nav2 button:hover{border-color:var(--red);color:var(--red)}
+.stills{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:clamp(8px,1.2vw,16px);max-width:1320px;margin:0 auto}
+.stills figure{margin:0;overflow:hidden;background:#eee;position:relative}
+.stills .w12{grid-column:span 12}.stills .w6{grid-column:span 6}.stills .w4{grid-column:span 4}
+.stills img{width:100%;height:auto;cursor:zoom-in;transition:transform 1.6s var(--ease),filter 1.2s var(--io)}
+.stills figure:hover img{transform:scale(1.035)}
+.stills figcaption{position:absolute;left:12px;bottom:10px;color:#fff;opacity:0;transform:translateY(4px);transition:opacity .6s var(--io),transform .6s var(--ease);text-shadow:0 1px 6px rgba(0,0,0,.5);pointer-events:none}
+.stills figure:hover figcaption{opacity:.9;transform:none}
+.stills figure.rise{transition-delay:calc(var(--i) * 90ms)}
 
 /* 포스터 세 장 */
 .posters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,3vw,44px);max-width:1180px;margin:0 auto}
@@ -161,6 +161,7 @@ footer .small{margin-top:clamp(50px,7vw,90px);color:#aaa;display:flex;justify-co
   .top nav a.opt{display:none}
   .chars{grid-template-columns:1fr;max-width:340px}
   .posters{grid-template-columns:1fr;max-width:420px}
+  .stills .w4{grid-column:span 6}.stills .w4.first{grid-column:span 12}
   .making .side{display:none}
   .meter{flex-wrap:wrap;gap:12px 22px}
 }
@@ -248,20 +249,19 @@ footer .small{margin-top:clamp(50px,7vw,90px);color:#aaa;display:flex;justify-co
 <!-- 스틸 -->
 <section id="stills">
   <div class="head"><h2 class="mono">Stills</h2></div>
-  <div class="stills rise" id="stillsRow">
-    <figure><img src="assets/still_01.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_01.jpg"></figure>
-    <figure><img src="assets/still_02.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_02.jpg"></figure>
-    <figure><img src="assets/still_04.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_04.jpg"></figure>
-    <figure><img src="assets/still_03.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_03.jpg"></figure>
-    <figure><img src="assets/still_06.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_06.jpg"></figure>
-    <figure><img src="assets/still_10.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_10.jpg"></figure>
-    <figure><img src="assets/still_12.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_12.jpg"></figure>
-    <figure><img src="assets/still_07.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_07.jpg"></figure>
-    <figure><img src="assets/still_05.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_05.jpg"></figure>
-    <figure><img src="assets/still_08.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_08.jpg"></figure>
-    <figure><img src="assets/still_11.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_11.jpg"></figure>
+  <div class="stills" id="stillsGrid">
+    <figure class="w12 rise" style="--i:0"><img src="assets/still_01.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_01.jpg"><figcaption class="mono">01</figcaption></figure>
+    <figure class="w6 rise" style="--i:1"><img src="assets/still_02.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_02.jpg"><figcaption class="mono">02</figcaption></figure>
+    <figure class="w6 rise" style="--i:2"><img src="assets/still_04.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_04.jpg"><figcaption class="mono">03</figcaption></figure>
+    <figure class="w4 first rise" style="--i:0"><img src="assets/still_06.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_06.jpg"><figcaption class="mono">04</figcaption></figure>
+    <figure class="w4 rise" style="--i:1"><img src="assets/still_07.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_07.jpg"><figcaption class="mono">05</figcaption></figure>
+    <figure class="w4 rise" style="--i:2"><img src="assets/still_08.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_08.jpg"><figcaption class="mono">06</figcaption></figure>
+    <figure class="w6 rise" style="--i:0"><img src="assets/still_03.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_03.jpg"><figcaption class="mono">07</figcaption></figure>
+    <figure class="w6 rise" style="--i:1"><img src="assets/still_05.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_05.jpg"><figcaption class="mono">08</figcaption></figure>
+    <figure class="w6 rise" style="--i:2"><img src="assets/still_10.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_10.jpg"><figcaption class="mono">09</figcaption></figure>
+    <figure class="w6 rise" style="--i:0"><img src="assets/still_11.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_11.jpg"><figcaption class="mono">10</figcaption></figure>
+    <figure class="w12 rise" style="--i:1"><img src="assets/still_12.jpg" alt="모모 장면" loading="lazy" decoding="async" data-src="assets/still_12.jpg"><figcaption class="mono">11</figcaption></figure>
   </div>
-  <div class="nav2"><button id="stPrev" aria-label="이전">←</button><button id="stNext" aria-label="다음">→</button></div>
 </section>
 
 <div class="link"><i></i></div>
@@ -457,14 +457,10 @@ footer .small{margin-top:clamp(50px,7vw,90px);color:#aaa;display:flex;justify-co
   [].forEach.call(document.querySelectorAll('.rise,.link'), function(el){ io.observe(el); });
 
   // 스틸 넘기기
-  var row = document.getElementById('stillsRow');
   function glide(get, set, to, ms){
     var from = get(), t0 = performance.now();
     (function f(now){ var x = Math.min(1, (now - t0) / ms); set(from + (to - from) * eio(x)); if (x < 1) requestAnimationFrame(f); })(t0);
   }
-  function slide(d){ row.style.scrollSnapType = 'none'; glide(function(){ return row.scrollLeft; }, function(v){ row.scrollLeft = v; }, row.scrollLeft + d * row.clientWidth * .7, 900); setTimeout(function(){ row.style.scrollSnapType = ''; }, 950); }
-  document.getElementById('stPrev').onclick = function(){ slide(-1); };
-  document.getElementById('stNext').onclick = function(){ slide(1); };
   [].forEach.call(document.querySelectorAll('a[href^="#"]'), function(a){
     a.addEventListener('click', function(e){
       var id = a.getAttribute('href').slice(1), el = id ? document.getElementById(id) : null; e.preventDefault();
