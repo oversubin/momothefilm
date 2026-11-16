@@ -110,8 +110,11 @@ section{padding:0 clamp(18px,4vw,56px)}
 .chars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,4vw,64px);max-width:1080px;margin:0 auto}
 .char{text-align:center}
 .char .c{position:relative;aspect-ratio:1;width:100%}
-.char .c img{position:absolute;inset:7%;width:86%;height:86%;border-radius:50%;object-fit:cover;filter:grayscale(1) contrast(1.05);transition:filter 1.2s var(--io),transform 1.6s var(--ease)}
-.char:hover .c img{filter:none;transform:scale(1.02)}
+.char .c img{position:absolute;inset:7%;width:86%;height:86%;border-radius:50%;object-fit:cover;filter:grayscale(1) contrast(1.08);transition:transform 1.6s var(--ease)}
+.char:hover .c img{transform:scale(1.02)}
+.char .c .th line{stroke:#fff;mix-blend-mode:difference;stroke-width:.17;stroke-opacity:.85;stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.9s var(--io)}
+.char .c .th line.r{stroke:#c8281e;mix-blend-mode:normal;stroke-width:.22;stroke-opacity:.95}
+.char.in .c .th line{stroke-dashoffset:0}
 .char .c svg{position:absolute;inset:0;width:100%;height:100%;transition:transform 2.4s var(--ease)}
 .char:hover .c svg{transform:rotate(-24deg)}
 .char .c circle{fill:#bbb}
@@ -302,31 +305,81 @@ footer .small{margin-top:clamp(50px,7vw,90px);color:#aaa;display:flex;justify-co
   function ss(x, a, b){ x = Math.max(0, Math.min(1, (x - a) / (b - a))); return x * x * (3 - 2 * x); }
 
   // 핀 고리: 800개 핀을 2D 판에 찍고, 지금 실이 걸린 핀을 붉게
-  function Pins(cv){ this.cv = cv; this.g = cv.getContext('2d'); this.size = 0; this.last = ''; }
+  // + 방금 걸린 실 몇 가닥을 붉은 꼬리로(새 실일수록 진하게) → 실이 어디서 어디로 가는지 보이게
+  // + 지금 핀은 빛나는 점과 퍼지는 고리, 마우스를 대면 가까운 핀들이 붉게 반응하고 지금 핀에서 그쪽으로 가는 실이 비친다
+  function Pins(cv, ta){
+    this.cv = cv; this.g = cv.getContext('2d'); this.size = 0; this.ta = ta;
+    this.head = -1; this.alpha = 0; this.trail = []; this.mx = null; this.vis = true; this.on = false; this.t0 = performance.now();
+    var self = this, host = cv.parentNode;
+    host.addEventListener('pointermove', function(e){ var r = cv.getBoundingClientRect(), h = r.width / 2;
+      var x = (e.clientX - r.left - h) / h, y = (h - (e.clientY - r.top)) / h; self.mx = Math.hypot(x, y) < 1.25 ? [x, y] : null; self.kick(); });
+    host.addEventListener('pointerleave', function(){ self.mx = null; self.kick(); });
+    new IntersectionObserver(function(es){ self.vis = es[0].isIntersecting; if (self.vis) self.kick(); }).observe(cv);
+  }
   Pins.prototype.draw = function(head, alpha){
+    this.head = head; this.alpha = alpha;
+    this.trail = head >= 0 && this.ta ? this.ta.recentPins(7) : [];
+    this.kick();
+  };
+  Pins.prototype.kick = function(){ if (this.on || !this.vis) return; this.on = true; var self = this; requestAnimationFrame(function(n){ self.on = false; self.paint(n); }); };
+  Pins.prototype.paint = function(now){
     var cv = this.cv, css = cv.clientWidth, dpr = Math.min(devicePixelRatio || 1, 1.5), S = Math.round(css * dpr);
-    var key = S + '|' + head + '|' + alpha.toFixed(2);
-    if (key === this.last) return; this.last = key;
+    if (!S) return;
     if (S !== this.size){
       this.size = cv.width = cv.height = S;
       var ring = this.ring = document.createElement('canvas'); ring.width = ring.height = S;
       var rg = ring.getContext('2d'), hh = S / 2, r = Math.max(0.6, S / 1400); rg.fillStyle = 'rgba(0,0,0,.32)';
       for (var k = 0; k < 800; k++){ var p = ThreadArt.pin(k); rg.fillRect(hh + p[0] * hh * 1.012 - r / 2, hh - p[1] * hh * 1.012 - r / 2, r, r); }
     }
-    var g = this.g, h = S / 2; g.clearRect(0, 0, S, S);
-    if (alpha <= 0) return;
-    g.globalAlpha = alpha; g.drawImage(this.ring, 0, 0); g.globalAlpha = 1;
-    if (head >= 0){
-      var q = ThreadArt.pin(head), x = h + q[0] * h * 1.012, y = h - q[1] * h * 1.012;
-      g.fillStyle = 'rgba(179,38,30,' + alpha + ')'; g.beginPath(); g.arc(x, y, Math.max(2, S / 300), 0, 7); g.fill();
+    var g = this.g, h = S / 2, A = this.alpha, R = h * 1.012, u = S / 1000;
+    function P(k){ var q = ThreadArt.pin(k); return [h + q[0] * R, h - q[1] * R]; }
+    g.clearRect(0, 0, S, S);
+    if (A <= 0 && !this.mx) return;
+    g.globalAlpha = Math.max(A, this.mx ? .5 : 0); g.drawImage(this.ring, 0, 0); g.globalAlpha = 1;
+    var live = false, t = (now - this.t0) / 1000;
+    // 마우스 근처 핀: 각도 거리에 따라 붉게
+    if (this.mx){
+      var ma = Math.atan2(this.mx[1], this.mx[0]);
+      for (var k = 0; k < 800; k += 2){
+        var q = ThreadArt.pin(k), d = Math.abs(Math.atan2(Math.sin(Math.atan2(q[1], q[0]) - ma), Math.cos(Math.atan2(q[1], q[0]) - ma)));
+        if (d > .22) continue; var w = 1 - d / .22, xy = P(k);
+        g.fillStyle = 'rgba(179,38,30,' + (w * .85).toFixed(3) + ')'; g.beginPath(); g.arc(xy[0], xy[1], u * (1.2 + 2.2 * w), 0, 7); g.fill();
+      }
     }
+    if (this.head >= 0 && A > 0){
+      var tr = this.trail, n = tr.length;
+      // 붉은 꼬리: 방금 걸린 실들
+      g.lineCap = 'round';
+      for (var i = 1; i < n; i++){
+        var a0 = P(tr[i - 1]), a1 = P(tr[i]), f = i / (n - 1);
+        g.strokeStyle = 'rgba(179,38,30,' + (A * (.08 + .62 * f * f)).toFixed(3) + ')'; g.lineWidth = u * (0.6 + 1.4 * f);
+        g.beginPath(); g.moveTo(a0[0], a0[1]); g.lineTo(a1[0], a1[1]); g.stroke();
+      }
+      var hp = P(this.head);
+      // 지금 핀에서 마우스 쪽 핀으로 가는 '다음 실' 미리보기
+      if (this.mx){
+        var mq = Math.atan2(this.mx[1], this.mx[0]), tx = h + Math.cos(mq) * R, ty = h - Math.sin(mq) * R;
+        g.setLineDash([u * 4, u * 5]); g.strokeStyle = 'rgba(179,38,30,' + (A * .45).toFixed(3) + ')'; g.lineWidth = u * .9;
+        g.beginPath(); g.moveTo(hp[0], hp[1]); g.lineTo(tx, ty); g.stroke(); g.setLineDash([]);
+      }
+      // 빛나는 점 + 퍼지는 고리
+      var pulse = (t % 1.1) / 1.1, rr = Math.max(3, S / 190);
+      g.strokeStyle = 'rgba(179,38,30,' + (A * .55 * (1 - pulse)).toFixed(3) + ')'; g.lineWidth = u * 1.2;
+      g.beginPath(); g.arc(hp[0], hp[1], rr * (1.4 + 3.6 * pulse), 0, 7); g.stroke();
+      var gr = g.createRadialGradient(hp[0], hp[1], 0, hp[0], hp[1], rr * 4.5);
+      gr.addColorStop(0, 'rgba(179,38,30,' + (A * .35).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(179,38,30,0)');
+      g.fillStyle = gr; g.beginPath(); g.arc(hp[0], hp[1], rr * 4.5, 0, 7); g.fill();
+      g.fillStyle = 'rgba(179,38,30,' + A + ')'; g.beginPath(); g.arc(hp[0], hp[1], rr * (1.15 + .15 * Math.sin(t * 9)), 0, 7); g.fill();
+      live = true;
+    }
+    if (live || this.mx) this.kick();
   };
 
   function setup(glId, pinsId, wrapId){
     var cv = document.getElementById(glId), ta = null;
     try { ta = window.ThreadArt ? new ThreadArt(cv) : null; } catch (e) { ta = null; }
     if (!ta || !ta.ok){ var w = document.getElementById(wrapId), fb = w.querySelector('.fallback'); fb.src = fb.dataset.src; w.classList.add('nogl'); return null; }
-    var pins = new Pins(document.getElementById(pinsId));
+    var pins = new Pins(document.getElementById(pinsId), ta);
     var rt; addEventListener('resize', function(){ clearTimeout(rt); rt = setTimeout(function(){ ta.resize(); }, 200); });
     return {ta: ta, pins: pins};
   }
@@ -449,7 +502,19 @@ footer .small{margin-top:clamp(50px,7vw,90px);color:#aaa;display:flex;justify-co
     var cp = '<svg viewBox="-50 -50 100 100">';
     for (var k = 0; k < 120; k++){ var b = k / 120 * Math.PI * 2; cp += '<circle cx="' + (47 * Math.cos(b)).toFixed(2) + '" cy="' + (47 * Math.sin(b)).toFixed(2) + '" r=".35"/>'; }
     cp += '</svg>';
-    [].forEach.call(document.querySelectorAll('.char .c'), function(c){ c.insertAdjacentHTML('beforeend', cp); });
+    // 인물 원마다 실 몇 가닥 — 얼굴을 피해 가장자리 쪽으로(원 중심에서 반지름 0.45~0.85 거리), 화면에 들어오면 그어짐
+    [].forEach.call(document.querySelectorAll('.char .c'), function(c, ci){
+      var s = 7 + ci * 31, th = '<g class="th">', m = 0;
+      function rnd(){ s = (s * 9301 + 49297) % 233280; return s / 233280; }
+      while (m < 4){
+        var a = rnd() * Math.PI * 2, d = (66 + rnd() * 76) * Math.PI / 180, b = a + d;
+        var my = Math.sin((a + b) / 2) * Math.cos(d / 2);
+        if (my < -0.2) continue;                       // 위쪽(얼굴) 가로지르는 실은 건너뜀
+        th += '<line pathLength="1"' + (m == 1 ? ' class="r"' : '') + ' x1="' + (47 * Math.cos(a)).toFixed(2) + '" y1="' + (47 * Math.sin(a)).toFixed(2) + '" x2="' + (47 * Math.cos(b)).toFixed(2) + '" y2="' + (47 * Math.sin(b)).toFixed(2) + '" style="transition-delay:' + (300 + m * 320) + 'ms"/>';
+        m++;
+      }
+      c.insertAdjacentHTML('beforeend', cp.replace('</svg>', th + '</g></svg>'));
+    });
   })();
 
   // 화면에 들어오면: 떠오름, 붉은 실 이어짐

@@ -166,6 +166,12 @@
     var s = this.cur; if (!s) return -1;
     if (this.nHi > 0) return s.hi.seq[this.nHi]; if (this.nLo > 0) return s.lo.seq[this.nLo]; return -1;
   };
+  // 최근에 걸린 핀 k+1개(오래된 것 → 지금 핀) — 빨간 실 꼬리용
+  ThreadArt.prototype.recentPins = function (k) {
+    var s = this.cur; if (!s) return [];
+    var a = this.nHi > 0 ? s.hi.seq : s.lo.seq, n = this.nHi > 0 ? this.nHi : this.nLo;
+    if (n <= 0) return []; var o = []; for (var i = Math.max(0, n - k); i <= n; i++) o.push(a[i]); return o;
+  };
   ThreadArt.pin = function (k) { return [px[k], py[k]]; };
   ThreadArt.PINS = PINS;
   window.ThreadArt = ThreadArt;
